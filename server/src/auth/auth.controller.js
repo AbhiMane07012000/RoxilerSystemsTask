@@ -1,7 +1,10 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = require("../../config/db");
-const { generateAccessToken, generateRefreshToken } = require("../../utils/token");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../../utils/token");
 
 /**
  * @swagger
@@ -48,12 +51,15 @@ const generateTokens = (user) => {
  *                 example: user@example.com
  *               password:
  *                 type: string
- *                 example: password123
+ *                 example: Password@123
  *               role:
  *                 type: enum
- *                 enum: [SUPERADMIN, STOREUSER, NORMALUSER]
- *                 example: NORMALUSER
- *                 default: NORMALUSER
+ *                 enum: [SYSTEM_ADMIN, STORE_OWNER, NORMAL_USER]
+ *                 example: NORMAL_USER
+ *                 default: NORMAL_USER
+ *               address:
+ *                 type: string
+ *                 example: 1 Main Street, Pune, Maharashtra, India
  *     responses:
  *       201:
  *         description: User created
@@ -65,14 +71,14 @@ const generateTokens = (user) => {
  *         description: Registration failed
  */
 const register = async (req, res) => {
-  const { email, password, name, role } = req.body;
+  const { name, email, password, address, role } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
 
-  const allowedRoles = ["SUPERADMIN", "STOREUSER", "NORMALUSER"];
-  const assignedRole = allowedRoles.includes(role) ? role : "NORMALUSER";
+  const allowedRoles = ["SYSTEM_ADMIN", "STORE_OWNER", "NORMAL_USER"];
+  const assignedRole = allowedRoles.includes(role) ? role : "NORMAL_USER";
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -82,9 +88,31 @@ const register = async (req, res) => {
     return res.status(409).json({ message: "Email already in use" });
   }
   try {
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,16}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be 8-16 chars and contain uppercase & special character",
+      });
+    }
+
+    if (!name || name.length < 20 || name.length > 60) {
+      return res.status(400).json({
+        message: "Name must be between 20 and 60 characters",
+      });
+    }
+
+    if (address && address.length > 400) {
+      return res.status(400).json({
+        message: "Address cannot exceed 400 characters",
+      });
+    }
+
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { email, password: hashed, name, role: assignedRole },
+      data: { email, password: hashed, name, address, role: assignedRole },
     });
     res.status(201).json({ message: "User created", userId: user.id });
   } catch (error) {
@@ -112,7 +140,7 @@ const register = async (req, res) => {
  *                 example: user@example.com
  *               password:
  *                 type: string
- *                 example: password123
+ *                 example: Password@123
  *     responses:
  *       200:
  *         description: Returns accessToken and refreshToken
@@ -139,7 +167,6 @@ const login = async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // 🍪 store refresh token in cookie
     res.cookie("jid", refreshToken, {
       httpOnly: true,
       secure: true,
@@ -186,6 +213,7 @@ const me = async (req, res) => {
         name: user.name,
         role: user.role,
         updatedAt: user.updatedAt,
+        address: user.address,
       },
     });
   } catch (error) {
@@ -232,7 +260,9 @@ const refresh = async (req, res) => {
   try {
     payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
   } catch {
-    return res.status(403).json({ message: "Invalid or expired refresh token" });
+    return res
+      .status(403)
+      .json({ message: "Invalid or expired refresh token" });
   }
 
   const user = await prisma.user.findUnique({
@@ -240,7 +270,9 @@ const refresh = async (req, res) => {
   });
 
   if (!user || user.tokenVersion !== payload.tokenVersion) {
-    return res.status(403).json({ message: "Invalid or expired refresh token" });
+    return res
+      .status(403)
+      .json({ message: "Invalid or expired refresh token" });
   }
 
   await prisma.user.update({
@@ -307,4 +339,63 @@ const logout = async (req, res) => {
   res.json({ message: "Logged out" });
 };
 
-module.exports = { register, login, me, refresh, logout };
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   put:
+ *     summary: Change user password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [oldPassword, newPassword]
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Invalid input or old password incorrect
+ *       500:
+ *         description: Internal server error
+ */
+const changePassword = async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id }
+  });
+
+  const isValid = await bcrypt.compare(
+    oldPassword,
+    user.password
+  );
+
+  if (!isValid) {
+    return res.status(400).json({
+      message: "Old password incorrect"
+    });
+  }
+
+  const hashed = await bcrypt.hash(
+    newPassword,
+    10
+  );
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed }
+  });
+
+  res.json({
+    message: "Password updated successfully"
+  });
+};
+
+module.exports = { register, login, me, refresh, logout, changePassword };

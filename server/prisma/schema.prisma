@@ -18,12 +18,58 @@ enum Role{
 }
 
 model User {
-  id        Int   @id @default(autoincrement())
-  name      String?
-  email     String   @unique
-  password  String
-  tokenVersion   Int      @default(0)
-  role Role @default(NORMAL_USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password      String
+  address       String?
+  role          Role      @default(NORMAL_USER)
+
+  tokenVersion  Int       @default(0)
+
+  ratings       Rating[]
+
+  ownedStores   Store[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Store {
+  id            Int       @id @default(autoincrement())
+
+  name          String
+  email         String    @unique
+  address       String
+
+  ownerId       Int
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  ratings       Rating[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([name])
+  @@index([address])
+}
+
+model Rating {
+  id            Int       @id @default(autoincrement())
+
+  rating        Int
+
+  userId        Int
+  storeId       Int
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store         Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, storeId])
+
+  @@index([userId])
+  @@index([storeId])
 }
