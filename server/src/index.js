@@ -19,7 +19,9 @@ app.use(cookieParser());
 app.use(express.json());
 
 const authRoutes = require("./auth/auth.routes");
+const adminRoutes = require("./admin/admin.routes");
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

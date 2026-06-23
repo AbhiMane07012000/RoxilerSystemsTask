@@ -22,7 +22,7 @@ model User {
   name          String
   email         String    @unique
   password      String
-  address       String?
+  address       String
   role          Role      @default(NORMAL_USER)
 
   tokenVersion  Int       @default(0)
