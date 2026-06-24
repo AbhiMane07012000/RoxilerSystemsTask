@@ -5,7 +5,6 @@ const {
   getUsers,
   getDashboard,
   getUserById,
-  getStores,
 } = require("./admin.controller");
 const { protect, authorize } = require("../auth/auth.middleware");
 
@@ -13,12 +12,10 @@ const router = express.Router();
 
 router.get("/dashboard", protect, authorize("SYSTEM_ADMIN"), getDashboard);
 
-router.post("/create-user", protect, authorize("SYSTEM_ADMIN"), createUser);
+router.post("/users", protect, authorize("SYSTEM_ADMIN"), createUser);
 
 router.get("/users", protect, authorize("SYSTEM_ADMIN"), getUsers);
 
 router.get("/users/:id", protect, authorize("SYSTEM_ADMIN"), getUserById);
-
-router.get("/stores", protect, authorize("SYSTEM_ADMIN"), getStores);
 
 module.exports = router;

@@ -20,8 +20,15 @@ app.use(express.json());
 
 const authRoutes = require("./auth/auth.routes");
 const adminRoutes = require("./admin/admin.routes");
+const storeRoutes = require("./store/store.routes");
+const storeOwnerRoutes = require("./store/store-owner.routes");
+const ratingRoutes = require("./rating/rating.routes");
+
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/stores", storeRoutes);
+app.use("/api/store-owner", storeOwnerRoutes);
+app.use("/api/ratings", ratingRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
