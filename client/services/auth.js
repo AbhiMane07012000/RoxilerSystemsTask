@@ -11,7 +11,13 @@ export const loginUser = async (data) => {
 };
 
 export const getCurrentUser = async () => {
-  const response = await api.get("/auth/me");
+  const response = await api.get("/auth/me", {
+    headers: {
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    },
+  });
   return response.data;
 };
 
