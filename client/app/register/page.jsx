@@ -23,26 +23,22 @@ export default function RegisterPage() {
   const validateForm = () => {
     const { name, email, password, address } = form;
     
-    // Name Validation
     if (name.length < 20 || name.length > 60) {
       toast.error("Name must be between 20 and 60 characters.");
       return false;
     }
     
-    // Email Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error("Please enter a valid email address.");
       return false;
     }
 
-    // Address Validation
     if (address.length > 400) {
       toast.error("Address must be under 400 characters.");
       return false;
     }
 
-    // Password Validation
     const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/-]).{8,16}$/;
     if (!passwordRegex.test(password)) {
       toast.error("Password must be 8-16 characters, with at least 1 uppercase letter and 1 special character.");

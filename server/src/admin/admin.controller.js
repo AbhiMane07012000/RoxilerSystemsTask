@@ -200,19 +200,13 @@ const getUsers = async (req, res) => {
 
     const users = await prisma.user.findMany({
       where: {
-        name: {
-          contains: name,
-          mode: "insensitive",
-        },
-        email: {
-          contains: email,
-          mode: "insensitive",
-        },
-        address: {
-          contains: address,
-          mode: "insensitive",
-        },
-        role,
+        name: name ? { contains: name, mode: "insensitive" } : undefined,
+        
+        email: email ? { contains: email, mode: "insensitive" } : undefined,
+        
+        address: address ? { contains: address, mode: "insensitive" } : undefined,
+        
+        role: role ? role : undefined, 
       },
       select: {
         id: true,
